@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>jQuery Add / Remove Table Rows</title>
+<style type="text/css">
+    table{
+        width: 100%;
+        margin: 20px 0;
+        border-collapse: collapse;
+    }
+    table, th, td{
+        border: 1px solid #cdcdcd;
+    }
+    table th, table td{
+        padding: 5px;
+        text-align: left;
+    }
+</style>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+<script type="text/javascript">
+    var arr = [];
+    var ar = [];
+    var Prod_Id;
+    var Qnty;
+    var Mobile_No;
+    var Dues;
+    var Total;
+    var GrandTotal;
+    var RemBal;
+    var BalUpdate;
+    var BillNo;
+   // var HaveStrd;
+    var HS;
+    var CusId;
+    var PurStrd;
+    var Products = [];
+    var ProdStr;
+    //var delHP;
+    var PId;
+    $(document).ready(function(){
+        $(".MobSub").click(function(){
+            Mobile_No = $("#Mobile_No").val();
+            getDue(Mobile_No);
+
+            function getDue(str){
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+                xmlhttp.onreadystatechange = addDue;
+                xmlhttp.open("GET","billing.php?Mobile_No="+str,true);
+                xmlhttp.send();
+            }
+        });
+        function addDue(){
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                //Dues = JSON.parse(xmlhttp.responseText);
+                ar = JSON.parse(xmlhttp.responseText);
+
+                if(ar=="Create Account") {
+                    window.location.href = 'addcustomer.html';
+                }
+
+                Dues = ar[0];
+              //  BillNo = ar[1];
+                CusId = ar[1];
+                document.getElementById("due").innerHTML = "Previous Dues: " + Dues + "<br>";
+               // alert(BillNo);
+                GrandTotal = parseFloat(Dues);
+                
+            }
+        }
+        $(".add-row").click(function(){
+            Prod_Id = $("#Prod_Id").val();
+            Qnty = $("#Qnty").val();
+            Products.push(Prod_Id);
+            getData(Prod_Id);
+            
+            function getData(str){
+                if (window.XMLHttpRequest) {
+            // code for IE7+, Firefox, Chrome, Opera, Safari
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+            // code for IE6, IE5
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+                xmlhttp.onreadystatechange = addRow;
+                xmlhttp.open("GET","billing.php?q="+str,true);
+                xmlhttp.send();
+            } 
+
+            
+        });
+
+        
+
+        function addRow(){
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                arr = JSON.parse(xmlhttp.responseText);
+                //alert(arr[0]);
+
+                var Prod_Name = arr[0];
+                var Price = arr[1];
+                Total = Price * Qnty;
+                GrandTotal += Total;
+
+                var markup = "<tr><td><input type='checkbox' name='record'></td><td>" + Prod_Id + "</td><td>" + Prod_Name + "</td><td>" + Price +"</td><td>" + Qnty + "</td><td>" + Total + "</td></tr>";
+                $("table tbody").append(markup);
+                $(".done").click(function(){
+                    document.getElementById("grtl").innerHTML = "GrandTotal: " + GrandTotal + "<br>";
+                    //alert(Products);
+                    ProdStr = Products.join(',');
+                   // alert(ProdStr);
+
+                });
+
+               // StrHave(Prod_Id,BillNo); 
+                purchase(Prod_Id,CusId,Qnty);
+
+            }
+        }
+
+       /* function StrHave(S,BillNo){
+            //alert("text");
+            if (window.XMLHttpRequest) {
+                xmlhttp = new XMLHttpRequest();
+            } else {
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.onreadystatechange = addHave;
+            xmlhttp.open("GET","billing.php?S="+S+"&B="+BillNo,true);
+            xmlhttp.send();
+        } 
+
+        function addHave() {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                HaveStrd = JSON.parse(xmlhttp.responseText);
+                //alert(HaveStrd);
+                purchase(Prod_Id,CusId,Qnty);
+            }    
+        }*/
+
+        function purchase(Prod_Id,CusId,Qnty){
+            //alert("text");
+            if (window.XMLHttpRequest) {
+                xmlhttp = new XMLHttpRequest();
+            } else {
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.onreadystatechange = addPurchase;
+            xmlhttp.open("GET","billing.php?Prod_Id="+Prod_Id+"&CusId="+CusId+"&Qnty="+Qnty,true);
+            xmlhttp.send();
+        } 
+
+        function addPurchase() {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                PurStrd = JSON.parse(xmlhttp.responseText);
+                //alert(PurStrd);
+            }    
+        }
+
+        //ProdStr = Products.join(',');
+        /*$(".done").click(function(){
+            document.getElementById("grtl").innerHTML = "GrandTotal: " + GrandTotal + "<br>";
+                    //alert(Products);
+            ProdStr = Products.join(',');
+            //alert(ProdStr);
+
+        });*/
+        // Find and remove selected table rows
+        $(".delete-row").click(function(){
+            $("table tbody").find('input[name="record"]').each(function(){
+                if($(this).is(":checked")){
+                    PId = $(this).closest("tr").find('td:eq(1)').text();
+                    //alert("PID" + PId);
+                    var Ttl = $(this).closest("tr").find('td:eq(5)').text();
+                    $(this).parents("tr").remove();
+                    GrandTotal -= Ttl;
+                   // alert(id);
+                    delHvPur(PId,CusId);
+
+                }
+            });
+        });
+
+        function delHvPur(PId,CusId) {
+            if (window.XMLHttpRequest) {
+                xmlhttp = new XMLHttpRequest();
+            } else {
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.onreadystatechange = RmHvPur;
+            xmlhttp.open("GET","billing.php?c="+PId+"&CusId="+CusId,true);
+            xmlhttp.send();
+        }
+
+        
+
+        function RmHvPur() {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                 var index = Products.indexOf(PId);
+                 if(index > -1){
+                    Products.splice(index, 1);
+                 }
+                 //delHP = JSON.parse(xmlhttp.responseText);
+                 //alert(delHP);
+            }    
+        }
+
+        $(".enter").click(function(){
+            RemBal = GrandTotal - $("#pamt").val();
+            document.getElementById("rembal").innerHTML = "Remaining Dues: " + RemBal + "<br>";
+            updatebal(RemBal,Mobile_No);
+
+            function updatebal(str,Mobile_No){
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+                xmlhttp.onreadystatechange = addBal;
+                xmlhttp.open("GET","billing.php?Bal="+str+"&x="+Mobile_No,true);
+                xmlhttp.send();
+            } 
+        });
+
+        function addBal() {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                BalUpdate = JSON.parse(xmlhttp.responseText);
+                alert(BalUpdate);
+            }    
+        }
+
+        $(".bill").click(function(){
+            bill(GrandTotal,CusId,ProdStr);
+
+            function bill(Amt,CusId,ProdStr){
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+                xmlhttp.onreadystatechange = addBill;
+                xmlhttp.open("GET","billing.php?Amt="+Amt+"&CusId="+CusId+"&ProdStr="+ProdStr,true);
+                xmlhttp.send();
+            }
+        });
+        
+        function addBill() {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                BillNo = JSON.parse(xmlhttp.responseText);
+                //alert(HS);
+               // document.getElementById("billNo").innerHTML = HS;
+            }
+        }
+    }); 
+    
+</script>
+</head>
+<body>
+    <form>
+        <input type="number" id="Mobile_No" placeholder="Mobile Number">
+        <input type="button" class="MobSub" value="Submit">
+        <p id="due"><b></b></p>
+        <input type="text" id="Prod_Id" placeholder="Product Id">
+        <input type="number" id="Qnty" placeholder="Quantity">
+        <input type="button" class="add-row" value="Add Row">
+    </form>
+    <table>
+        <thead>
+            <tr>
+                <th>Select</th>
+                <th>Prod_Id</th>
+                <th>Prod_Name</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!--<tr>
+                <td><input type="checkbox" name="record"></td>
+                <td>Peter Parker</td>
+                <td>peterparker@mail.com</td>
+            </tr>-->
+        </tbody>
+    </table>
+    <button type="button" class="delete-row">Delete Row</button><br>
+    <button type="button" class="done">Done</button>
+    <h3 id="grtl"></h3>
+    <form>
+        <h3>Paid:</h3>
+        <input type="number" id="pamt" name="P_Amt" placeholder="Paid Amount"><br>
+        <button type="button" class="enter">Enter</button><br>
+        <h3 id="rembal"></h3><br>
+        <button type="button" class="bill">Generate Bill</button><br>
+        <!--<h2 id="balupdate"></h2>-->
+        <h2 id="billNo"></h2>
+    </form>
+</body> 
+</html>
